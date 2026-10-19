@@ -1,0 +1,45 @@
+name: nf-core RNA-seq validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "params/**"
+      - "README.md"
+      - ".github/workflows/nfcore-rnaseq.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nfcore-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Nextflow
+        run: |
+          curl -fsSL https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/nextflow
+          nextflow -version
+      - name: Check Docker
+        run: docker --version
+      - name: Run nf-core/rnaseq test profile
+        run: bash scripts/run_test.sh
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfcore-rnaseq-test-results
+          path: |
+            results/
+            .nextflow.log
+          if-no-files-found: warn
+          retention-days: 30
